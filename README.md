@@ -1,4 +1,4 @@
-# Chess Repertoire App
+# ChessRep
 
 A sleek, mobile-responsive React application for building and practicing your chess opening repertoire using spaced repetition.
 
