@@ -13,44 +13,83 @@ export default function Practice() {
     const [status, setStatus] = useState('loading'); // loading, empty, active, feedback, complete
     const [feedback, setFeedback] = useState(null); // 'correct', 'wrong'
     const [orientation, setOrientation] = useState('white');
+    const [stats, setStats] = useState({ total: 0, learned: 0 });
 
-    useEffect(() => {
-        // Generate Queue
+    // Setup State
+    const [phase, setPhase] = useState('setup'); // setup, active, complete, empty
+    const [config, setConfig] = useState({
+        sides: { white: true, black: true },
+        forceAll: false,
+        selectedTrees: [] // array of tree IDs. Empty = all.
+    });
+
+    // Helper: Get time until due formatted
+    const getTimeUntilDue = (nextReview) => {
+        const diff = nextReview - Date.now();
+        if (diff <= 0) return "Now";
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        if (hours > 24) return `${Math.floor(hours / 24)}d`;
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        return `${minutes}m`;
+    };
+
+    const startPractice = () => {
+        // Generate Queue & Stats
         const newQueue = [];
+        let total = 0;
+        let learned = 0;
         const now = Date.now();
 
         const traverse = (node, parentFen, side) => {
-            // Determine who made the move at 'node'
-            // If parentFen is undefined (Root), node is root. No move made.
-
             if (parentFen) {
                 const g = new Chess(parentFen);
-                const moveColor = g.turn(); // 'w' or 'b'
+                const moveColor = g.turn();
 
-                // If the move that created this node was made by 'side', it's a practice item
-                // Node represents the state AFTER the move.
-                // So if I am White, I want to practice White moves.
-                // White moves are those where `parentFen` turn was 'w'.
+                // Filter by Side
+                if (moveColor === 'w' && !config.sides.white) return;
+                if (moveColor === 'b' && !config.sides.black) return;
 
                 if (moveColor === side[0]) {
-                    // Check if due
-                    const nextReview = node.learning?.nextReview || 0;
-                    if (nextReview <= now) {
-                        newQueue.push({
-                            node,
-                            parentFen,
-                            correctSan: node.san
-                        });
+                    // Filter by Tree Selection
+                    // If selectedTrees is not empty, we check if this node belongs to one of them.
+                    // This is tricky: Nodes don't know their tree.
+                    // We need to check if this node ID is in any of the selected trees' pathIds.
+                    let include = true;
+                    if (config.selectedTrees.length > 0) {
+                        const savedTrees = repertoire.savedVariations || [];
+                        const inSelected = savedTrees.some(tree =>
+                            config.selectedTrees.includes(tree.id) && tree.pathIds.includes(node.id)
+                        );
+                        if (!inSelected) include = false;
+                    }
+
+                    if (include) {
+                        total++;
+                        if (node.learning && node.learning.box > 0) {
+                            learned++;
+                        }
+
+                        // Check if due OR Force All
+                        const nextReview = node.learning?.nextReview || 0;
+                        if (config.forceAll || nextReview <= now) {
+                            newQueue.push({
+                                node,
+                                parentFen,
+                                correctSan: node.san,
+                                nextReview // Store for display
+                            });
+                        }
                     }
                 }
             }
-
-            // Recurse
             node.children.forEach(child => traverse(child, node.fen, side));
         };
 
-        traverse(repertoire.white, null, 'white');
-        traverse(repertoire.black, null, 'black');
+        if (config.sides.white) traverse(repertoire.white, null, 'white');
+        if (config.sides.black) traverse(repertoire.black, null, 'black');
+
+        setStats({ total, learned });
 
         // Shuffle
         for (let i = newQueue.length - 1; i > 0; i--) {
@@ -59,24 +98,36 @@ export default function Practice() {
         }
 
         setQueue(newQueue);
-        setStatus(newQueue.length > 0 ? 'active' : 'empty');
-    }, []);
+        setPhase(newQueue.length > 0 ? 'active' : 'empty');
+    };
 
     useEffect(() => {
-        if (status === 'active' && queue.length > 0 && !currentItem) {
+        if (phase === 'active' && queue.length > 0 && !currentItem) {
             const item = queue[0];
             setCurrentItem(item);
             setGame(new Chess(item.parentFen));
             const g = new Chess(item.parentFen);
             setOrientation(g.turn() === 'w' ? 'white' : 'black');
             setFeedback(null);
-        } else if (status === 'active' && queue.length === 0) {
-            setStatus('complete');
+        } else if (phase === 'active' && queue.length === 0) {
+            setPhase('complete');
         }
-    }, [status, queue, currentItem]);
+    }, [phase, queue, currentItem]);
+
+    // Helper to toggle Tree selection
+    const toggleTree = (id) => {
+        setConfig(prev => {
+            const exists = prev.selectedTrees.includes(id);
+            if (exists) {
+                return { ...prev, selectedTrees: prev.selectedTrees.filter(t => t !== id) };
+            } else {
+                return { ...prev, selectedTrees: [...prev.selectedTrees, id] };
+            }
+        });
+    };
 
     const onDrop = (source, target) => {
-        if (status !== 'active') return false;
+        if (phase !== 'active') return false;
 
         try {
             const move = game.move({ from: source, to: target, promotion: 'q' });
@@ -133,39 +184,134 @@ export default function Practice() {
         }
     };
 
-    if (status === 'loading') return <div className="container center">Loading...</div>;
-    if (status === 'empty') return (
+    // Render Setup
+    if (phase === 'setup') {
+        const savedTrees = repertoire.savedVariations || [];
+        return (
+            <div className="container full-height">
+                <header style={{ padding: '1rem 0' }}>
+                    <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <ArrowLeft size={20} /> Home
+                    </Link>
+                </header>
+                <main style={{ flex: 1, overflowY: 'auto', paddingBottom: '2rem' }}>
+                    <h1 style={{ marginBottom: '1.5rem' }}>Practice Setup</h1>
+
+                    {/* Sides */}
+                    <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
+                        <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>I want to practice...</div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                                className={`btn ${config.sides.white ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setConfig(c => ({ ...c, sides: { ...c.sides, white: !c.sides.white } }))}
+                            >White</button>
+                            <button
+                                className={`btn ${config.sides.black ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setConfig(c => ({ ...c, sides: { ...c.sides, black: !c.sides.black } }))}
+                            >Black</button>
+                        </div>
+                    </div>
+
+                    {/* Mode */}
+                    <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontWeight: 600 }}>Practice All (Force Review)</span>
+                            <input
+                                type="checkbox"
+                                checked={config.forceAll}
+                                onChange={(e) => setConfig(c => ({ ...c, forceAll: e.target.checked }))}
+                                style={{ width: '20px', height: '20px' }}
+                            />
+                        </div>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                            If checked, you practice all selected moves regardless of whether they are due.
+                        </p>
+                    </div>
+
+                    {/* Trees */}
+                    {savedTrees.length > 0 && (
+                        <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Select Openings (Optional)</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {savedTrees.map(tree => (
+                                    <div key={tree.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={config.selectedTrees.includes(tree.id)}
+                                            onChange={() => toggleTree(tree.id)}
+                                        />
+                                        <span>{tree.name}</span>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>({tree.rootColor})</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                                Leave all unchecked to practice your entire repertoire.
+                            </p>
+                        </div>
+                    )}
+
+                    <button className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.2rem' }} onClick={startPractice}>
+                        Start Session
+                    </button>
+                </main>
+            </div>
+        );
+    }
+
+    if (phase === 'loading') return <div className="container center">Loading...</div>;
+    if (phase === 'empty') return (
         <div className="container full-height" style={{ justifyContent: 'center', textAlign: 'center' }}>
             <CheckCircle size={64} color="var(--success)" />
             <h2>All caught up!</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>No moves due for review.</p>
-            <Link to="/" className="btn btn-primary">Back Home</Link>
+            <p style={{ color: 'var(--text-secondary)' }}>No moves due for review matched your criteria.</p>
+            <button onClick={() => setPhase('setup')} className="btn btn-primary" style={{ marginTop: '1rem' }}>Back to Setup</button>
         </div>
     );
-    if (status === 'complete') return (
+    if (phase === 'complete') return (
         <div className="container full-height" style={{ justifyContent: 'center', textAlign: 'center' }}>
             <CheckCircle size={64} color="var(--success)" />
             <h2>Session Complete!</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>You reviewed all due moves.</p>
-            <Link to="/" className="btn btn-primary">Back Home</Link>
+            <p style={{ color: 'var(--text-secondary)' }}>You reviewed all selected moves.</p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
+                <Link to="/" className="btn btn-secondary">Home</Link>
+                <button onClick={() => setPhase('setup')} className="btn btn-primary">Practice Again</button>
+            </div>
         </div>
     );
 
     return (
         <div className="container full-height">
             <header style={{ padding: '1rem 0' }}>
-                <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <ArrowLeft size={20} /> Quit Practice
-                </Link>
+                <button onClick={() => setPhase('setup')} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', padding: 0 }}>
+                    <ArrowLeft size={20} /> Quit Session
+                </button>
             </header>
 
             <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {/* Info Card */}
+                {currentItem && (
+                    <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
+                            {repertoire.savedVariations?.find(v => v.pathIds.includes(currentItem.node.id))?.name || "Practicing Node"}
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                            Learned: {stats.learned} / {stats.total} ({Math.round(stats.total ? (stats.learned / stats.total) * 100 : 0)}%)
+                            {currentItem.node.learning && currentItem.node.learning.box > 0 && (
+                                <span style={{ marginLeft: '1rem', color: 'var(--accent-primary)' }}>
+                                    (Due: {getTimeUntilDue(currentItem.nextReview)})
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 <div style={{ position: 'relative' }}>
                     <ChessboardWrapper
                         position={game.fen()}
                         onPieceDrop={onDrop}
                         orientation={orientation}
-                        arePiecesDraggable={status === 'active' && !feedback}
+                        arePiecesDraggable={phase === 'active' && !feedback}
                     />
                     {feedback && (
                         <div style={{
@@ -194,6 +340,6 @@ export default function Practice() {
                     </p>
                 </div>
             </main>
-        </div>
+        </div >
     );
 }

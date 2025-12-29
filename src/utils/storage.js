@@ -10,13 +10,20 @@ export const initialRepertoire = {
         id: 'root',
         fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
         children: []
-    }
+    },
+    savedVariations: []
 };
 
 export const loadRepertoire = () => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
-        return data ? JSON.parse(data) : initialRepertoire;
+        if (!data) return initialRepertoire;
+        const parsed = JSON.parse(data);
+        return {
+            ...initialRepertoire,
+            ...parsed,
+            savedVariations: parsed.savedVariations || []
+        };
     } catch (e) {
         console.error("Failed to load repertoire", e);
         return initialRepertoire;

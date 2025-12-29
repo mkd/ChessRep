@@ -2,7 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Brain, Plus } from 'lucide-react';
 
+import { loadRepertoire } from '../utils/storage';
+
 export default function Home() {
+    const repertoire = loadRepertoire();
+    const savedTrees = repertoire.savedVariations || [];
+
     return (
         <div className="container full-height">
             <header style={{ padding: '2rem 0', textAlign: 'center' }}>
@@ -50,6 +55,37 @@ export default function Home() {
                         </div>
                     </div>
                 </Link>
+
+                {savedTrees.length > 0 && (
+                    <div style={{ marginTop: '2rem' }}>
+                        <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Saved Opening Trees</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {savedTrees.map(tree => (
+                                <Link
+                                    key={tree.id}
+                                    to="/editor"
+                                    state={{ loadTreeId: tree.id }}
+                                    className="card-link"
+                                >
+                                    <div className="card" style={{
+                                        backgroundColor: 'var(--bg-secondary)',
+                                        padding: '1rem',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px solid var(--border-color)',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }}>
+                                        <div style={{ fontWeight: 500 }}>{tree.name}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                            {new Date(tree.date).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </main>
 
             <footer style={{ padding: '2rem 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
