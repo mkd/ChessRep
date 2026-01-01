@@ -6,7 +6,7 @@ import Practice from './pages/Practice';
 
 function App() {
   return (
-    <Router>
+    <Router basename="/chessrep">
       <div className="app-container" style={{ minHeight: '100vh', backgroundColor: 'var(--bg-primary)' }}>
         <Routes>
           <Route path="/" element={<Home />} />
