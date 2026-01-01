@@ -55,20 +55,15 @@ export const AuthProvider = ({ children }) => {
     };
 
     const signOut = async () => {
+        // Immediate UI update
+        setSession(null);
+        setUser(null);
         if (!supabase) return;
         await supabase.auth.signOut();
     };
 
     return (
-        <AuthContext.Provider value={{
-            user: {
-                email: 'tester@chessrep.com',
-                user_metadata: { full_name: 'Chess Master' }
-            }, // MOCKED FOR VERIFICATION
-            session: {},
-            loading: false,
-            signIn, signUp, signOut, updateProfile
-        }}>
+        <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut, updateProfile }}>
             {children}
         </AuthContext.Provider>
     );
