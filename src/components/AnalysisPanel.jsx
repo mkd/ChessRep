@@ -57,23 +57,54 @@ export default function AnalysisPanel({
             flexDirection: 'column',
             minHeight: 0
         }}>
-            {/* Active Line Display */}
-            <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+            {/* Active Line Display - Horizontal Scroll */}
+            <div style={{
+                flexShrink: 0,
+                backgroundColor: 'var(--bg-tertiary)',
+                borderBottom: '1px solid var(--border-color)',
+                padding: '0.5rem 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                overflowX: 'auto',
+                whiteSpace: 'nowrap',
+                height: '3.5rem'
+            }}>
                 {openingName && (
-                    <div className="text-secondary text-xs uppercase tracking-wider font-semibold mb-1" style={{ color: 'var(--accent-primary)' }}>
+                    <div className="text-secondary text-xs uppercase tracking-wider font-semibold mr-2" style={{ color: 'var(--accent-primary)', flexShrink: 0 }}>
                         {openingName}
                     </div>
                 )}
-                {currentLine && (
-                    <div className="font-mono text-sm" style={{ whiteSpace: 'nowrap', overflowX: 'auto', paddingBottom: '2px' }}>
-                        {currentLine}
-                    </div>
+                {/* Reconstruct history from currentLine string is a bit hacky, but consistent with current props. 
+                     Ideally we'd map over a 'history' prop, but let's parse the string for now or use the moves logic if available.
+                     actually we have 'currentLine' string. Let's make it look like pills.
+                */}
+                {currentLine ? (
+                    currentLine.split(' ').map((token, i) => {
+                        if (token.includes('.')) {
+                            return <span key={i} className="text-tertiary text-xs font-mono select-none" style={{ marginRight: '0.25rem' }}>{token}</span>;
+                        }
+                        return (
+                            <span key={i} style={{
+                                padding: '0.25rem 0.5rem',
+                                backgroundColor: 'var(--bg-primary)',
+                                borderRadius: '0.25rem',
+                                border: '1px solid var(--border-color)',
+                                fontSize: '0.9rem',
+                                fontWeight: 600,
+                                color: 'var(--text-primary)'
+                            }}>
+                                {token}
+                            </span>
+                        );
+                    })
+                ) : (
+                    <div className="text-tertiary text-sm italic">Start analysis...</div>
                 )}
-                {!currentLine && !openingName && <div className="text-tertiary text-sm italic">Start analysis...</div>}
             </div>
 
             {/* Annotation Section */}
-            <div style={{ marginBottom: '1rem', flexShrink: 0 }}>
+            <div style={{ marginBottom: '1rem', flexShrink: 0, padding: '0 1rem', marginTop: '1rem' }}>
                 {isEditingAnnotation ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         <textarea
@@ -91,7 +122,7 @@ export default function AnalysisPanel({
                 ) : (
                     <div
                         onClick={() => setIsEditingAnnotation(true)}
-                        style={{ padding: '0.5rem', minHeight: '3rem', cursor: 'text' }}
+                        style={{ padding: '0.5rem', minHeight: '3rem', cursor: 'text', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-md)' }}
                     >
                         {currentNode.comments ? (
                             <p style={{ margin: 0, lineHeight: '1.5' }}>{currentNode.comments}</p>
@@ -102,18 +133,20 @@ export default function AnalysisPanel({
                 )}
             </div>
 
-            {/* Gap Warning (Only if no children and mostly likely a gap) */}
+            {/* Gap Warning */}
             {isGap && (
-                <div className="card" style={{ marginBottom: '1rem', borderColor: 'var(--accent-primary)', backgroundColor: 'rgba(99, 102, 241, 0.05)' }}>
-                    <div className="text-sm font-semibold text-primary" style={{ marginBottom: '0.25rem' }}>Your Move</div>
-                    <div className="text-xs text-secondary" style={{ marginBottom: '0.75rem' }}>
-                        Choose a move from the Masters list below to add it to your repertoire automatically.
+                <div style={{ padding: '0 1rem' }}>
+                    <div className="card" style={{ marginBottom: '1rem', borderColor: 'var(--accent-primary)', backgroundColor: 'rgba(99, 102, 241, 0.05)' }}>
+                        <div className="text-sm font-semibold text-primary" style={{ marginBottom: '0.25rem' }}>You haven't studied this line yet</div>
+                        <div className="text-xs text-secondary" style={{ marginBottom: '0.75rem' }}>
+                            Choose a move below to add it to your repertoire.
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* Tabs */}
-            <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '0.5rem', padding: '0 0.5rem' }}>
                 <button
                     className={`btn-ghost ${activeTab === 'masters' ? 'text-primary font-semibold' : ''}`}
                     style={{ flex: 1, borderBottom: activeTab === 'masters' ? '2px solid var(--accent-primary)' : 'none', borderRadius: 0 }}
@@ -126,32 +159,25 @@ export default function AnalysisPanel({
                     style={{ flex: 1, borderBottom: activeTab === 'eval' ? '2px solid var(--accent-primary)' : 'none', borderRadius: 0 }}
                     onClick={() => setActiveTab('eval')}
                 >
-                    User Moves
+                    Saved Moves
                 </button>
                 <button
                     className={`btn-ghost ${activeTab === 'saved' ? 'text-primary font-semibold' : ''}`}
                     style={{ flex: 1, borderBottom: activeTab === 'saved' ? '2px solid var(--accent-primary)' : 'none', borderRadius: 0 }}
                     onClick={() => setActiveTab('saved')}
                 >
-                    My Lines
+                    My Repertoires
                 </button>
             </div>
 
-            {/* Content List - Allow to expand naturally */}
-            <div style={{ flex: 1 }}>
+            {/* Content List */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
                 {activeTab === 'masters' && (
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                         {loadingStats ? (
                             <div className="text-secondary text-center p-4">Loading stats...</div>
                         ) : (
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                                <thead>
-                                    <tr className="text-secondary text-xs" style={{ textAlign: 'left' }}>
-                                        <th style={{ padding: '0.5rem', fontWeight: 500 }}>Move</th>
-                                        <th style={{ padding: '0.5rem', fontWeight: 500, textAlign: 'right' }}>Games</th>
-                                        <th style={{ padding: '0.5rem', fontWeight: 500, width: '140px' }}>Win / Draw / Loss</th>
-                                    </tr>
-                                </thead>
                                 <tbody>
                                     {(stats?.moves || []).slice(0, 10).map((move, i) => {
                                         const total = move.white + move.black + move.draws;
@@ -174,28 +200,30 @@ export default function AnalysisPanel({
                                                 }}
                                                 className="hover:bg-tertiary"
                                             >
-                                                <td style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <span className="font-semibold">{move.san}</span>
+                                                <td style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                    <span className="font-bold text-base" style={{ minWidth: '3ch' }}>{move.san}</span>
                                                     {isSaved && (
-                                                        <span title="In Repertoire" style={{ color: 'var(--success)', display: 'flex' }}>
+                                                        <span title="In Repertoire" style={{ color: 'var(--success)', display: 'flex', background: 'rgba(34, 197, 94, 0.1)', padding: '2px', borderRadius: '4px' }}>
                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td style={{ padding: '0.5rem', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                                                    {total}
+                                                <td style={{ padding: '0.75rem 1rem', width: '60%' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                        <div style={{ display: 'flex', height: '6px', width: '100%', borderRadius: '3px', overflow: 'hidden' }}>
+                                                            <div style={{ width: `${wPct}%`, backgroundColor: '#4ade80' }} /> {/* green-400 */}
+                                                            <div style={{ width: `${dPct}%`, backgroundColor: '#94a3b8' }} /> {/* slate-400 */}
+                                                            <div style={{ width: `${bPct}%`, backgroundColor: '#f87171' }} /> {/* red-400 */}
+                                                        </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                                                            <span>{wPct}%</span>
+                                                            <span>{dPct}%</span>
+                                                            <span>{bPct}%</span>
+                                                        </div>
+                                                    </div>
                                                 </td>
-                                                <td style={{ padding: '0.5rem' }}>
-                                                    <div style={{ display: 'flex', height: '6px', width: '100%', borderRadius: '3px', overflow: 'hidden', marginBottom: '4px' }}>
-                                                        <div style={{ width: `${wPct}%`, backgroundColor: '#e5e5e5' }} />
-                                                        <div style={{ width: `${dPct}%`, backgroundColor: '#525252' }} />
-                                                        <div style={{ width: `${bPct}%`, backgroundColor: '#171717' }} />
-                                                    </div>
-                                                    <div style={{ fontSize: '0.7em', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
-                                                        <span>{wPct}%</span>
-                                                        <span>{dPct}%</span>
-                                                        <span>{bPct}%</span>
-                                                    </div>
+                                                <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>
+                                                    {total > 1000 ? (total / 1000).toFixed(1) + 'k' : total}
                                                 </td>
                                             </tr>
                                         );

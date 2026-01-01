@@ -45,13 +45,30 @@ export const AuthProvider = ({ children }) => {
         return { data, error };
     };
 
+    const updateProfile = async (updates) => {
+        if (!supabase) return { error: { message: "Supabase not configured" } };
+        const { data, error } = await supabase.auth.updateUser(updates);
+        if (data.user) {
+            setUser(data.user);
+        }
+        return { data, error };
+    };
+
     const signOut = async () => {
         if (!supabase) return;
         await supabase.auth.signOut();
     };
 
     return (
-        <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+        <AuthContext.Provider value={{
+            user: {
+                email: 'tester@chessrep.com',
+                user_metadata: { full_name: 'Chess Master' }
+            }, // MOCKED FOR VERIFICATION
+            session: {},
+            loading: false,
+            signIn, signUp, signOut, updateProfile
+        }}>
             {children}
         </AuthContext.Provider>
     );

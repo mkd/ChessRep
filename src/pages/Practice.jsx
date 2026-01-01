@@ -250,14 +250,12 @@ export default function Practice() {
     };
 
     const handleGiveHint = () => {
-        // Highlight from square
-        // We need to know the 'from' square of the correct move.
-        // We have `currentItem.correctSan`. We need to parse it relative to `game`.
+        // Highlight from square AND to square
         try {
             const g = new Chess(game.fen());
             const move = g.move(currentItem.correctSan); // This returns the move object with `from` and `to`
             if (move) {
-                setHintSquare(move.from);
+                setHintSquare({ from: move.from, to: move.to });
             }
         } catch (e) {
             console.error(e);
@@ -267,8 +265,13 @@ export default function Practice() {
     // --- Render Helpers ---
     const getSquareStyles = () => {
         if (!hintSquare) return {};
+        // Support both single square (legacy) or object {from, to}
+        if (typeof hintSquare === 'string') {
+            return { [hintSquare]: { backgroundColor: 'rgba(255, 255, 0, 0.5)' } };
+        }
         return {
-            [hintSquare]: { backgroundColor: 'rgba(255, 255, 0, 0.5)' }
+            [hintSquare.from]: { backgroundColor: 'rgba(255, 255, 0, 0.5)' },
+            [hintSquare.to]: { backgroundColor: 'rgba(255, 255, 0, 0.5)' }
         };
     };
 
@@ -445,10 +448,10 @@ export default function Practice() {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
                     <div className="text-secondary text-xs">
-                        {queue.length} left
+                        {stats.total - queue.length} / {stats.total} moves checked
                     </div>
                     <button className="btn btn-secondary" onClick={handleGiveHint}>
-                        Show me the move
+                        Show me a hint
                     </button>
                     <div className="text-secondary text-xs">
                         {stats.sessionCorrect} / {stats.sessionCorrect + stats.sessionWrong}
