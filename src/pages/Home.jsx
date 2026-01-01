@@ -4,15 +4,44 @@ import { BookOpen, Brain, Plus } from 'lucide-react';
 
 import { loadRepertoire } from '../utils/storage';
 
+import { useAuth } from '../components/AuthProvider';
+import AuthForm from '../components/AuthForm';
+
 export default function Home() {
+    const { user, loading } = useAuth();
     const repertoire = loadRepertoire();
     const savedTrees = repertoire.savedVariations || [];
+
+    if (loading) {
+        return <div className="full-height flex-center">Loading...</div>;
+    }
+
+    if (!user) {
+        return (
+            <div className="container full-height" style={{ justifyContent: 'center', maxWidth: '600px' }}>
+                <header style={{ padding: '2rem 0', textAlign: 'center' }}>
+                    <h1 style={{ fontSize: '2.5rem', fontWeight: '700', margin: 0, color: 'var(--accent-primary)' }}>Chess Rep</h1>
+                    <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem', fontSize: '1.1rem' }}>
+                        Build your opening repertoire.<br />Practice smarter.
+                    </p>
+                </header>
+                <AuthForm />
+
+                {/* Fallback for local testing if Supabase is down */}
+                <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+                    <p className="text-secondary text-xs">
+                        Warning: Cloud sync requires an account.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="container full-height">
             <header style={{ padding: '2rem 0', textAlign: 'center' }}>
                 <h1 style={{ fontSize: '2rem', fontWeight: '700', margin: 0 }}>Chess Rep</h1>
-                <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Master your openings</p>
+                <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Welcome back, {user.email?.split('@')[0]}</p>
             </header>
 
             <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center' }}>
@@ -30,7 +59,7 @@ export default function Home() {
                             <BookOpen color="var(--accent-primary)" size={24} />
                         </div>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Editor</h2>
+                            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Opening Explorer</h2>
                             <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Build and manage your repertoire</p>
                         </div>
                     </div>

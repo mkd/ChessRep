@@ -4,20 +4,22 @@ A sleek, mobile-responsive React application for building and practicing your ch
 
 ## Features
 
-- **Opening Editor**: Manually enter your repertoire moves for both White and Black.
-- **Tree Structure**: Supports variations and comments for every move.
-- **Practice Mode**: Uses a Spaced Repetition logic (Leitner system) to help you memorize your lines efficiently. Moves are scheduled for review based on your performance.
-- **Mobile First**: Designed to work responsibly and effectively on mobile devices (e.g., iPhone).
-- **Dark Mode**: Sleek, premium dark theme.
+- **Opening Explorer**: Intuitive interface to build and analyze your repertoire.
+- **Tree Structure**: Supports unlimited variations, comments, and annotations (?!, !!, etc).
+- **Practice Mode**: Uses a Spaced Repetition logic (Leitner system) to prioritize moves you struggle with.
+- **Cloud Sync**: Seamlessly syncs your repertoire across devices using Supabase.
+- **User Accounts**: Registration and Login system to protect your data.
+- **Mobile First**: Optimized layout for mobile usage (iPhone PWA ready).
+- **Dark Mode**: Premium, OLED-friendly dark theme.
 
 ## Tech Stack
 
-- **React** (Vite)
-- **Chess Logic**: `chess.js`
+- **Frontend**: React (Vite)
+- **Logic**: `chess.js`
 - **Visualization**: `react-chessboard`
-- **Routing**: `react-router-dom`
+- **Backend/DB**: Supabase (PostgreSQL + Auth)
+- **State**: `react-router-dom` (Routing), Context API (Auth)
 - **Icons**: `lucide-react`
-- **Persistence**: `localStorage` (Data stays in your browser)
 
 ## Getting Started
 
@@ -32,12 +34,19 @@ A sleek, mobile-responsive React application for building and practicing your ch
    ```
    Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-3. **Build for Production**:
+3. **Supabase Setup**:
+   - Create a project at [supabase.com](https://supabase.com).
+   - Run the SQL setup script (`supabase_setup.sql`) in your project's SQL Editor.
+   - Copy `.env.example` to `.env` and add your `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+
+4. **Build for Production**:
    ```bash
    npm run build
    ```
 
 ## Usage
 
-1. **Editor**: Go to the Editor to start adding moves. Play a move on the board to add it to your repertoire. Add comments or delete variations as needed.
-2. **Practice**: Go to Practice mode. The app will present positions where you have a move due for review. Play the correct move to advance its schedule!
+1. **Dashboard**: Sign up/Log in to access your repertoire.
+2. **Explorer**: Add moves to your White or Black repertoire.
+3. **Practice**: Review due moves. The app tracks your success rate and schedules "Correct" moves further into the future.
+

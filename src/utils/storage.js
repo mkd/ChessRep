@@ -32,4 +32,11 @@ export const loadRepertoire = () => {
 
 export const saveRepertoire = (repertoire) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(repertoire));
+    window.dispatchEvent(new CustomEvent('repertoire-update', { detail: repertoire }));
+};
+
+export const onRepertoireChange = (callback) => {
+    const handler = (e) => callback(e.detail);
+    window.addEventListener('repertoire-update', handler);
+    return () => window.removeEventListener('repertoire-update', handler);
 };

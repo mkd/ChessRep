@@ -1,8 +1,12 @@
 import React from 'react';
-import { ArrowLeft, Settings, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowLeft, User, ChevronRight, Settings } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthProvider';
 
 export default function RepertoireHeader({ breadcrumbs = [], onSettingsClick }) {
+    const navigate = useNavigate();
+    const { user, signOut } = useAuth();
+
     return (
         <header style={{
             display: 'flex',
@@ -34,14 +38,41 @@ export default function RepertoireHeader({ breadcrumbs = [], onSettingsClick }) 
                 </div>
             </div>
 
-            <button
-                className="btn btn-secondary text-xs font-semibold"
-                onClick={onSettingsClick}
-                style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-            >
-                <Settings size={16} />
-                <span>Switch Color</span>
-            </button>
+            <div className="flex items-center gap-2">
+                {onSettingsClick && (
+                    <button
+                        className="btn btn-secondary text-xs font-semibold"
+                        onClick={onSettingsClick}
+                        style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                        <Settings size={16} />
+                        <span className="hidden sm:inline">Switch Color</span>
+                    </button>
+                )}
+
+                {user ? (
+                    <button
+                        className="btn btn-ghost text-error"
+                        onClick={async () => {
+                            await signOut();
+                            navigate('/');
+                        }}
+                        style={{ padding: '0.5rem', borderRadius: '50%' }}
+                        title="Sign Out"
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    </button>
+                ) : (
+                    <Link
+                        to="/"
+                        className="btn btn-ghost text-secondary"
+                        style={{ padding: '0.5rem', borderRadius: '50%' }}
+                        title="Login"
+                    >
+                        <User size={20} />
+                    </Link>
+                )}
+            </div>
         </header>
     );
 }

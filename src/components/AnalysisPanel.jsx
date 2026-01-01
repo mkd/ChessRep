@@ -47,7 +47,16 @@ export default function AnalysisPanel({
     const openingName = stats?.opening?.name || activeVariationName;
 
     return (
-        <div className="sheet" style={{ flex: 1, marginTop: '-1rem', position: 'relative', zIndex: 5, overflow: 'hidden' }}>
+        <div className="sheet" style={{
+            flex: 1,
+            marginTop: 0,
+            position: 'relative',
+            zIndex: 5,
+            // Remove overflow:hidden/auto from here to let the parent (page) scroll
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0
+        }}>
             {/* Active Line Display */}
             <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
                 {openingName && (
@@ -128,8 +137,8 @@ export default function AnalysisPanel({
                 </button>
             </div>
 
-            {/* Content List */}
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+            {/* Content List - Allow to expand naturally */}
+            <div style={{ flex: 1 }}>
                 {activeTab === 'masters' && (
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                         {loadingStats ? (

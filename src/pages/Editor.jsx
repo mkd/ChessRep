@@ -280,13 +280,23 @@ export default function Editor() {
     };
 
     return (
-        <div className="full-height bg-primary">
+        <div className="bg-primary" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <RepertoireHeader
                 breadcrumbs={getBreadcrumbs()}
                 onSettingsClick={handleSettingsClick}
             />
 
-            <div style={{ flex: '0 0 auto', width: '100%', maxWidth: '420px', margin: '0 auto', padding: '0.5rem' }}>
+            <div style={{
+                flex: '0 0 auto',
+                width: '100%',
+                maxWidth: '420px',
+                height: 'auto',
+                maxHeight: '55vh', // Limit board height on mobile
+                margin: '0 auto',
+                padding: '0.5rem',
+                display: 'flex',
+                flexDirection: 'column'
+            }}>
                 <ChessboardWrapper
                     position={currentFen}
                     onPieceDrop={onPieceDrop}
